@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "active=true": { "model": "blockofsky:block/sky_block" },
+    "active=false": { "model": "blockofsky:block/sky_block" }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": 1,
+  "id": "blockofsky",
+  "version": "${version}",
+  "name": "Block of Sky",
+  "description": "Blocks that render the sky of any dimension. Use the Sky Wand to change which dimension's sky is displayed!",
+  "authors": ["cerulan"],
+  "license": "MIT",
+  "icon": "assets/blockofsky/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["net.cerulan.blockofsky.BlockOfSkyMod"],
+    "client": ["net.cerulan.blockofsky.BlockOfSkyClient"]
+  },
+  "mixins": ["blockofsky.mixins.json"],
+  "accessWidener": "blockofsky.accesswidener",
+  "depends": {
+    "fabricloader": ">=0.14.21",
+    "minecraft": "~1.20.1",
+    "java": ">=17",
+    "fabric-api": "*"
+  }
+}

@@ -1,0 +1,20 @@
+{
+  "type": "minecraft:crafting_shaped",
+  "pattern": [
+    "  G",
+    " B ",
+    "B  "
+  ],
+  "key": {
+    "G": {
+      "item": "minecraft:grass_block"
+    },
+    "B": {
+      "item": "minecraft:blaze_rod"
+    }
+  },
+  "result": {
+    "item": "blockofsky:sky_wand",
+    "count": 1
+  }
+}

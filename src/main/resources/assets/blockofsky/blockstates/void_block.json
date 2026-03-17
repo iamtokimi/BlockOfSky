@@ -1,0 +1,6 @@
+{
+  "variants": {
+    "active=true": { "model": "blockofsky:block/void_block" },
+    "active=false": { "model": "blockofsky:block/void_block" }
+  }
+}

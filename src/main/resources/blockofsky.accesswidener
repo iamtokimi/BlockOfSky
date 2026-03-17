@@ -1,0 +1,11 @@
+accessWidener   v2  named
+
+# Access the EFFECTS map in DimensionSpecialEffects (Object2ObjectMap)
+accessible field net/minecraft/client/renderer/DimensionSpecialEffects EFFECTS Lit/unimi/dsi/fastutil/objects/Object2ObjectMap;
+
+# Access protected inner classes for RenderType creation
+accessible class net/minecraft/client/renderer/RenderType$CompositeState
+accessible class net/minecraft/client/renderer/RenderType$CompositeState$CompositeStateBuilder
+accessible class net/minecraft/client/renderer/RenderType$CompositeRenderType
+accessible class net/minecraft/client/renderer/RenderStateShard$ShaderStateShard
+accessible class net/minecraft/client/renderer/RenderStateShard$EmptyTextureStateShard
