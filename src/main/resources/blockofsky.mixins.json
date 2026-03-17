@@ -7,7 +7,8 @@
   "client": [
     "LevelRendererMixin",
     "GameRendererMixin",
-    "ClientLevelMixin"
+    "ClientLevelMixin",
+    "FogRendererMixin"
   ],
   "injectors": {
     "defaultRequire": 1

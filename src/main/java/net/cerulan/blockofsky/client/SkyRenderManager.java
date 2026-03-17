@@ -12,8 +12,13 @@ import net.minecraft.client.Camera;
 import net.minecraft.client.CloudStatus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.renderer.*;
+import net.minecraft.core.Registry;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
+import net.minecraft.world.level.biome.Biome;
+import net.minecraft.world.level.dimension.DimensionType;
 import net.minecraft.world.phys.Vec3;
 import org.joml.Matrix4f;
 
@@ -32,6 +37,9 @@ public class SkyRenderManager {
     private static boolean isRenderingSky = false;
 
     private static volatile ResourceLocation overrideDimension = null;
+
+    private static final Map<ResourceLocation, ResourceLocation> effectsLocationCache = new HashMap<>();
+    private static final Map<ResourceLocation, int[]> dimensionColorCache = new HashMap<>();
 
     public static void setSkyShader(ShaderInstance shader) {
         skyShader = shader;
@@ -75,6 +83,120 @@ public class SkyRenderManager {
             RenderSystem.setShaderTexture(0, 0);
         }
     }
+
+
+    public static DimensionSpecialEffects resolveDimensionEffects(ResourceLocation dimId) {
+        ResourceLocation effectsLoc = resolveEffectsLocation(dimId);
+        DimensionSpecialEffects effects = DimensionSpecialEffects.EFFECTS.get(effectsLoc);
+        if (effects != null) return effects;
+
+        return DimensionSpecialEffects.EFFECTS.get(new ResourceLocation("minecraft", "overworld"));
+    }
+
+    private static ResourceLocation resolveEffectsLocation(ResourceLocation dimId) {
+        return effectsLocationCache.computeIfAbsent(dimId, id -> {
+            if (DimensionSpecialEffects.EFFECTS.containsKey(id)) {
+                return id;
+            }
+
+            Minecraft mc = Minecraft.getInstance();
+            if (mc.level != null) {
+                try {
+                    Registry<DimensionType> dimTypeReg = mc.level.registryAccess()
+                            .registryOrThrow(Registries.DIMENSION_TYPE);
+
+                    var holder = dimTypeReg.getHolder(
+                            ResourceKey.create(Registries.DIMENSION_TYPE, id));
+                    if (holder.isPresent()) {
+                        ResourceLocation effectsLoc = holder.get().value().effectsLocation();
+                        if (DimensionSpecialEffects.EFFECTS.containsKey(effectsLoc)) {
+                            return effectsLoc;
+                        }
+                    }
+
+                    for (var entry : dimTypeReg.entrySet()) {
+                        if (entry.getKey().location().equals(id)) {
+                            ResourceLocation effectsLoc = entry.getValue().effectsLocation();
+                            if (DimensionSpecialEffects.EFFECTS.containsKey(effectsLoc)) {
+                                return effectsLoc;
+                            }
+                        }
+                    }
+
+                    String namespace = id.getNamespace();
+                    if (!"minecraft".equals(namespace)) {
+                        for (var effectsKey : DimensionSpecialEffects.EFFECTS.keySet()) {
+                            if (effectsKey.getNamespace().equals(namespace)) {
+                                return effectsKey;
+                            }
+                        }
+                    }
+                } catch (Exception ignored) {}
+            }
+
+            return id;
+        });
+    }
+
+
+    public static int getDimensionSkyColor(ResourceLocation dimId) {
+        return getDimensionColors(dimId)[0];
+    }
+
+    public static int getDimensionFogColor(ResourceLocation dimId) {
+        return getDimensionColors(dimId)[1];
+    }
+
+    private static int[] getDimensionColors(ResourceLocation dimId) {
+        return dimensionColorCache.computeIfAbsent(dimId, SkyRenderManager::computeDimensionColors);
+    }
+
+    private static int[] computeDimensionColors(ResourceLocation dimId) {
+        if ("minecraft".equals(dimId.getNamespace())) {
+            return switch (dimId.getPath()) {
+                case "the_nether" -> new int[]{0x330707, 0x330808};
+                case "the_end" -> new int[]{0x0B0B0B, 0xA080A0};
+                default -> new int[]{0x78A7FF, 0xC0D8FF};
+            };
+        }
+
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.level == null) return new int[]{0x78A7FF, 0xC0D8FF};
+
+        try {
+            Registry<Biome> biomeReg = mc.level.registryAccess().registryOrThrow(Registries.BIOME);
+            String namespace = dimId.getNamespace();
+
+            int rS = 0, gS = 0, bS = 0;
+            int rF = 0, gF = 0, bF = 0;
+            int count = 0;
+
+            for (var entry : biomeReg.entrySet()) {
+                if (entry.getKey().location().getNamespace().equals(namespace)) {
+                    int sc = entry.getValue().getSpecialEffects().getSkyColor();
+                    rS += (sc >> 16) & 0xFF;
+                    gS += (sc >> 8) & 0xFF;
+                    bS += sc & 0xFF;
+
+                    int fc = entry.getValue().getSpecialEffects().getFogColor();
+                    rF += (fc >> 16) & 0xFF;
+                    gF += (fc >> 8) & 0xFF;
+                    bF += fc & 0xFF;
+
+                    count++;
+                }
+            }
+
+            if (count > 0) {
+                int skyColor = ((rS / count) << 16) | ((gS / count) << 8) | (bS / count);
+                int fogColor = ((rF / count) << 16) | ((gF / count) << 8) | (bF / count);
+                return new int[]{skyColor, fogColor};
+            }
+        } catch (Exception ignored) {}
+
+        return new int[]{0x78A7FF, 0xC0D8FF};
+    }
+
 
     public static void renderAllRequestedSkies(PoseStack poseStack, float partialTick,
                                                 Matrix4f projectionMatrix) {
@@ -179,6 +301,8 @@ public class SkyRenderManager {
         dimensionTargets.clear();
         dimensionRenderTypes.clear();
         requestedDimensions.clear();
+        effectsLocationCache.clear();
+        dimensionColorCache.clear();
     }
 
     public static Collection<RenderType> getActiveRenderTypes() {
